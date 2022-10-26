@@ -1,7 +1,7 @@
 use core::fmt;
 use std::error::Error;
 
-use crate::table::{Table, Data};
+use crate::table::{Data, Table};
 
 #[derive(Debug)]
 pub struct DatabaseError {
@@ -10,7 +10,7 @@ pub struct DatabaseError {
 
 impl fmt::Display for DatabaseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Database")
+        write!(f, "{}", self.source().unwrap())
     }
 }
 
@@ -47,16 +47,20 @@ pub struct Database {
 
 impl Database {
     pub fn new() -> Self {
-        Self {
-            tables: Vec::new(),
-        }
+        Self { tables: Vec::new() }
     }
 
-    pub fn add_table(&mut self, name: Data, attributes: Vec<Data>) -> Result<&mut Table, DatabaseError> {
+    pub fn add_table(
+        &mut self,
+        name: Data,
+        attributes: Vec<Data>,
+    ) -> Result<&mut Table, DatabaseError> {
         // If a table with that name already exists return an error
         for table in &self.tables {
             if table.name == name {
-                return Err(DatabaseError { source: DatabaseErrorSource::NameAlreadyExists });
+                return Err(DatabaseError {
+                    source: DatabaseErrorSource::NameAlreadyExists,
+                });
             }
         }
 
@@ -65,7 +69,15 @@ impl Database {
         Ok(&mut self.tables[element])
     }
 
-    // pub fn get_table(&mut self, name: Data) -> Result<&mut Table, DatabaseError> {
+    pub fn get_table(&mut self, name: Data) -> Result<&mut Table, DatabaseError> {
+        for table in &mut self.tables {
+            if table.name == name {
+                return Ok(table);
+            }
+        }
 
-    // }
+        Err(DatabaseError {
+            source: DatabaseErrorSource::NameDoesNotExist,
+        })
+    }
 }

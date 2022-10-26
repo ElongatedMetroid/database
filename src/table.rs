@@ -20,6 +20,7 @@ impl Error for TableError {
 #[derive(Debug)]
 enum TableErrorSource {
     IncorrectRowSize,
+    AttributeNotFound,
 }
 
 impl fmt::Display for TableErrorSource {
@@ -28,7 +29,9 @@ impl fmt::Display for TableErrorSource {
             f,
             "{}",
             match *self {
-                TableErrorSource::IncorrectRowSize => "row is not the correct size to be pushed to the table",
+                TableErrorSource::IncorrectRowSize =>
+                    "row is not the correct size to be pushed to the table",
+                TableErrorSource::AttributeNotFound => "the given attribute was not found",
             }
         )
     }
@@ -36,7 +39,6 @@ impl fmt::Display for TableErrorSource {
 
 impl Error for TableErrorSource {}
 
-#[derive(Debug)]
 pub struct Table {
     /// Name of the table
     pub(crate) name: Data,
@@ -62,22 +64,60 @@ pub enum Data {
     Blob(Vec<u8>),
 }
 
+impl fmt::Debug for Table {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for attribute in &self.attributes {
+            write!(f, "{:?}\t", attribute).unwrap();
+        }
+
+        writeln!(f).unwrap();
+
+        for row in &self.data {
+            for cell in row {
+                write!(f, "{:?}", cell).unwrap();
+            }
+
+            writeln!(f).unwrap();
+        }
+
+        Ok(())
+    }
+}
+
 impl Table {
     pub(crate) fn new(name: Data, attributes: Vec<Data>) -> Self {
         Self {
             name,
             attributes,
-            data: Vec::new(), 
+            data: Vec::new(),
         }
     }
 
-    pub fn push_row(&mut self, row: Vec<Option<Data>>) -> Result<&mut Table, TableError> {
+    pub fn push_row(&mut self, row: Vec<Option<Data>>) -> Result<usize, TableError> {
         if row.len() != self.attributes.len() {
-            return Err(TableError{ source: TableErrorSource::IncorrectRowSize });
+            return Err(TableError {
+                source: TableErrorSource::IncorrectRowSize,
+            });
         }
 
         self.data.push(row);
 
-        Ok(self)
+        Ok(self.data.len() - 1)
+    }
+
+    pub fn get_cell(
+        &mut self,
+        attribute: Data,
+        row_id: usize,
+    ) -> Result<&mut Option<Data>, TableError> {
+        for (x, a) in self.attributes.iter().enumerate() {
+            if *a == attribute {
+                return Ok(&mut self.data[row_id][x]);
+            }
+        }
+
+        Err(TableError {
+            source: TableErrorSource::AttributeNotFound,
+        })
     }
 }
