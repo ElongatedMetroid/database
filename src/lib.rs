@@ -16,23 +16,21 @@ mod tests {
         // Add new users
         let table = db.get_table(Data::Text(String::from("Users"))).unwrap();
 
-        let row_id = table
-            .push_row(vec![
-                Some(Data::Text(String::from("Bobby"))),
-                Some(Data::Integer(1980)),
-                Some(Data::Decimal(0.0)),
-            ])
-            .unwrap();
+        let row_id = table.push_row(vec![
+            Some(Data::Text(String::from("Bobby"))),
+            Some(Data::Integer(1980)),
+            Some(Data::Integer(0)),
+        ]);
 
         println!("{:#?}", table);
 
         // Users desposit money
         match table
-            .get_cell(Data::Text(String::from("Money")), row_id)
+            .get_cell(&Data::Text(String::from("Money")), row_id)
             .unwrap()
         {
             Some(money) => match money {
-                Data::Decimal(d) => *d += 1.0,
+                Data::Integer(d) => *d += 1,
                 _ => (),
             },
             None => (),
