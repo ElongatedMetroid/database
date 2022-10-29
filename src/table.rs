@@ -1,4 +1,4 @@
-use std::{error::Error, fmt, collections::BTreeMap};
+use std::{collections::BTreeMap, error::Error, fmt};
 
 #[derive(Debug)]
 pub struct TableError {
@@ -30,8 +30,9 @@ impl fmt::Display for TableErrorSource {
             "{}",
             match *self {
                 TableErrorSource::IncorrectRowSize =>
-                    "row is not the correct size to be pushed to the table",
-                TableErrorSource::AttributeNotFound => "the given attribute was not found",
+                    "row does not have enough elements to be pushed (note: attributes can be set to None)",
+                TableErrorSource::AttributeNotFound => 
+                    "the given attribute was not found",
             }
         )
     }
@@ -47,7 +48,7 @@ pub struct Table {
     table: BTreeMap<Data, Vec<Option<Data>>>,
 }
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub enum Data {
     /// String of characters
     Text(String),
@@ -89,22 +90,29 @@ impl Table {
             table.insert(attribute, Vec::new());
         }
 
-        Self {
-            name,
-            table,
-        }
+        Self { name, table }
     }
 
-    pub fn push_row(&mut self, mut row: Vec<Option<Data>>) -> usize {
-        for _ in 0..(row.len() - self.table.keys().len()) {
-            row.push(None);
+    pub fn push_row(&mut self, row: Vec<(Data, Option<Data>)>) -> Result<usize, TableError> {
+        // Make sure they are setting all attributes
+        if self.table.keys().len() - row.len() != 0 {
+            return Err(TableError { source: TableErrorSource::IncorrectRowSize })
+        }
+        // Make sure they are not trying to insert data under non-existant attributes
+        for (attribute, _) in &row {
+            if !self.table.contains_key(attribute) {
+                return Err(TableError { source: TableErrorSource::AttributeNotFound });
+            }
         }
 
-        for (table_cell, cell) in self.table.values_mut().zip(row) {
-            table_cell.push(cell);
+        // Push each Option<Data> into the column they belong
+        for (attribute, data) in row { 
+            self.table
+                .entry(attribute)
+                .and_modify(|column| column.push(data));
         }
 
-        0
+        Ok(self.table.values().next().unwrap().len() - 1)
     }
 
     pub fn get_cell(

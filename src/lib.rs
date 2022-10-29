@@ -16,11 +16,13 @@ mod tests {
         // Add new users
         let table = db.get_table(Data::Text(String::from("Users"))).unwrap();
 
+        println!("{:#?}", table);
+
         let row_id = table.push_row(vec![
-            Some(Data::Text(String::from("Bobby"))),
-            Some(Data::Integer(1980)),
-            Some(Data::Integer(0)),
-        ]);
+            (Data::Text(String::from("Name")), Some(Data::Text(String::from("Bobby")))),
+            (Data::Text(String::from("Birthday")), Some(Data::Integer(1980))),
+            (Data::Text(String::from("Money")), Some(Data::Integer(0))),
+        ]).unwrap();
 
         println!("{:#?}", table);
 
