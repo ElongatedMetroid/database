@@ -40,7 +40,6 @@ impl fmt::Display for TableErrorSource {
 
 impl Error for TableErrorSource {}
 
-#[derive(Debug)]
 pub struct Table {
     /// Name of the table
     pub(crate) name: Data,
@@ -62,25 +61,24 @@ pub enum Data {
     Blob(Vec<u8>),
 }
 
-// impl fmt::Debug for Table {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         for attribute in self.table.keys() {
-//             write!(f, "{:?}\t", attribute).unwrap();
-//         }
+impl fmt::Debug for Table {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "TABLE: {:?}\nAttributes: ", self.name).unwrap();
+        for attribute in self.table.keys() {
+            write!(f, "{:?}\t", attribute).unwrap();
+        }
 
-//         writeln!(f).unwrap();
+        writeln!(f).unwrap();
 
-//         for row in self.table.values() {
-//             for cell in row {
-//                 write!(f, "{:?}", cell).unwrap();
-//             }
+        for row in self.table.values() {
+            for cell in row {
+                write!(f, "\t{:?}", cell).unwrap();
+            }
+        }
 
-//             writeln!(f).unwrap();
-//         }
-
-//         Ok(())
-//     }
-// }
+        Ok(())
+    }
+}
 
 impl Table {
     pub(crate) fn new(name: Data, attributes: Vec<Data>) -> Self {
