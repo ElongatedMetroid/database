@@ -33,7 +33,7 @@ mod tests {
             ])
             .unwrap();
 
-            table
+        table
             .push_row(vec![
                 (
                     Data::Text(String::from("Name")),
@@ -43,7 +43,10 @@ mod tests {
                     Data::Text(String::from("Birthday")),
                     Some(Data::Integer(2000)),
                 ),
-                (Data::Text(String::from("Money")), Some(Data::Integer(10000))),
+                (
+                    Data::Text(String::from("Money")),
+                    Some(Data::Integer(10000)),
+                ),
             ])
             .unwrap();
 

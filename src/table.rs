@@ -180,7 +180,8 @@ impl fmt::Display for Table {
 }
 
 impl Table {
-    pub(crate) fn new(name: Data, attributes: Vec<Data>) -> Self {
+    /// Create a new empty Table with the specified name and attributes.
+    pub fn new(name: Data, attributes: Vec<Data>) -> Self {
         let mut table = BTreeMap::new();
 
         for attribute in attributes {
@@ -190,6 +191,9 @@ impl Table {
         Self { name, table }
     }
 
+    /// Push a new row to the table. The row must specify a tuple with .0 holding the attribute for which .1 will be under.
+    /// This will fail if either you didnt specify values for all attribute or you specified an attribute that does not exist
+    /// under this table.
     pub fn push_row(&mut self, row: Vec<(Data, Option<Data>)>) -> Result<usize, TableError> {
         // Make sure they are setting all attributes
         if self.table.keys().len() - row.len() != 0 {
@@ -216,6 +220,8 @@ impl Table {
         Ok(self.table.values().next().unwrap().len() - 1)
     }
 
+    /// Get a cell under the specified attribute, and on the row specified by row_id
+    /// This will fail if you specify an attribute that is not in the table.
     pub fn get_cell(
         &mut self,
         attribute: &Data,

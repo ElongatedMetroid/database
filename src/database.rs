@@ -46,10 +46,13 @@ pub struct Database {
 }
 
 impl Database {
+    /// Create a new empty database
     pub fn new() -> Self {
         Self { tables: Vec::new() }
     }
 
+    /// Add a new table to the database with the specified attributes.
+    /// This will fail if you try to create a database with a name that is already in use by another database.
     pub fn add_table(
         &mut self,
         name: Data,
@@ -69,6 +72,8 @@ impl Database {
         Ok(&mut self.tables[element])
     }
 
+    /// Get a mutable reference to the table with a specified name.
+    /// This will fail if a table with the name does not exist.
     pub fn get_table(&mut self, name: Data) -> Result<&mut Table, DatabaseError> {
         for table in &mut self.tables {
             if table.name == name {
