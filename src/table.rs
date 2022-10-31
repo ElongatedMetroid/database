@@ -39,6 +39,7 @@ impl fmt::Display for TableErrorSource {
 
 impl Error for TableErrorSource {}
 
+#[derive(Debug)]
 pub struct Table {
     /// Name of the table
     pub(crate) name: Data,
@@ -71,26 +72,6 @@ impl fmt::Display for Data {
         };
 
         write!(f, "{}", data)
-    }
-}
-
-// TODO: Create a clear way to view a database
-impl fmt::Debug for Table {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "TABLE: {:?}\nAttributes: ", self.name).unwrap();
-        for attribute in self.table.keys() {
-            write!(f, "{:?}\t", attribute).unwrap();
-        }
-
-        writeln!(f).unwrap();
-
-        for row in self.table.values() {
-            for cell in row {
-                write!(f, "\t{:?}", cell).unwrap();
-            }
-        }
-
-        Ok(())
     }
 }
 
