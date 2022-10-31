@@ -1,3 +1,4 @@
+#![feature(exact_size_is_empty)]
 mod database;
 mod table;
 
@@ -16,15 +17,37 @@ mod tests {
         // Add new users
         let table = db.get_table(Data::Text(String::from("Users"))).unwrap();
 
-        println!("{:#?}\n\n", table);
+        println!("{}\n\n", table);
 
-        let row_id = table.push_row(vec![
-            (Data::Text(String::from("Name")), Some(Data::Text(String::from("Bobby")))),
-            (Data::Text(String::from("Birthday")), Some(Data::Integer(1980))),
-            (Data::Text(String::from("Money")), Some(Data::Integer(0))),
-        ]).unwrap();
+        let row_id = table
+            .push_row(vec![
+                (
+                    Data::Text(String::from("Name")),
+                    Some(Data::Text(String::from("Bobdfdsafasdfsadfsadffasdsby"))),
+                ),
+                (
+                    Data::Text(String::from("Birthday")),
+                    Some(Data::Integer(1990)),
+                ),
+                (Data::Text(String::from("Money")), Some(Data::Integer(1))),
+            ])
+            .unwrap();
 
-        println!("{:#?}\n\n", table);
+            table
+            .push_row(vec![
+                (
+                    Data::Text(String::from("Name")),
+                    Some(Data::Text(String::from("Timmy"))),
+                ),
+                (
+                    Data::Text(String::from("Birthday")),
+                    Some(Data::Integer(2000)),
+                ),
+                (Data::Text(String::from("Money")), Some(Data::Integer(10000))),
+            ])
+            .unwrap();
+
+        println!("{}\n\n", table);
 
         // Users desposit money
         match table
@@ -38,6 +61,6 @@ mod tests {
             None => (),
         }
 
-        println!("{:#?}\n\n", table);
+        println!("{}\n\n", table);
     }
 }

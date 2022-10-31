@@ -31,8 +31,7 @@ impl fmt::Display for TableErrorSource {
             match *self {
                 TableErrorSource::IncorrectRowSize =>
                     "row does not have enough elements to be pushed (note: attributes can be set to None)",
-                TableErrorSource::AttributeNotFound => 
-                    "the given attribute was not found",
+                TableErrorSource::AttributeNotFound => "the given attribute was not found",
             }
         )
     }
@@ -61,6 +60,21 @@ pub enum Data {
     Blob(Vec<u8>),
 }
 
+impl fmt::Display for Data {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let data = match self {
+            Data::Text(value) => value.clone(),
+            Data::Character(value) => value.to_string(),
+            Data::Integer(value) => value.to_string(),
+            Data::Boolean(value) => value.to_string(),
+            Data::Blob(_) => String::from("-- blob --"),
+        };
+
+        write!(f, "{}", data)
+    }
+}
+
+// TODO: Create a clear way to view a database
 impl fmt::Debug for Table {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "TABLE: {:?}\nAttributes: ", self.name).unwrap();
@@ -73,6 +87,91 @@ impl fmt::Debug for Table {
         for row in self.table.values() {
             for cell in row {
                 write!(f, "\t{:?}", cell).unwrap();
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl fmt::Display for Table {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // Seperator character that seperates cells vertically
+        let vertical_seperator = "|";
+        // Seperator character that seperates cells horizontally
+        let horizontal_seperator = "_";
+        // Character that will be used for blank space
+        let blank_seperator = " ";
+        // Spacing on each side of the attribute
+        let spacing = 5;
+
+        let draw_horizontal_seperator = |f: &mut fmt::Formatter<'_>| {
+            writeln!(f).unwrap();
+
+            for attribute in self.table.keys() {
+                write!(
+                    f,
+                    "{}",
+                    horizontal_seperator.repeat(
+                        attribute.to_string().len() + vertical_seperator.len() + (spacing * 2)
+                    )
+                )
+                .unwrap();
+            }
+
+            writeln!(f).unwrap();
+        };
+
+        for attribute in self.table.keys() {
+            write!(
+                f,
+                "{}{}{}{}",
+                blank_seperator.repeat(spacing),
+                attribute,
+                blank_seperator.repeat(spacing),
+                vertical_seperator
+            )
+            .unwrap();
+        }
+
+        draw_horizontal_seperator(f);
+
+        if !self.table.values().next().unwrap().is_empty() {
+            for i in 0..self.table.values().next().unwrap().len() {
+                for (attribute, column) in &self.table {
+                    let cell_space = (spacing * 2) + attribute.to_string().len();
+
+                    write!(
+                        f,
+                        "{}",
+                        match &column[i] {
+                            Some(value) => {
+                                let mut value = value.to_string();
+
+                                if value.len() > cell_space {
+                                    value.truncate(value.len() - cell_space - 3);
+
+                                    format!("{}...{}", value, vertical_seperator)
+                                } else {
+                                    format!(
+                                        "{}{}{}",
+                                        value,
+                                        blank_seperator.repeat(cell_space - value.len()),
+                                        vertical_seperator
+                                    )
+                                }
+                            }
+                            None => format!(
+                                "{}{}",
+                                blank_seperator.repeat(cell_space),
+                                vertical_seperator
+                            ),
+                        }
+                    )
+                    .unwrap();
+                }
+
+                draw_horizontal_seperator(f);
             }
         }
 
@@ -94,17 +193,21 @@ impl Table {
     pub fn push_row(&mut self, row: Vec<(Data, Option<Data>)>) -> Result<usize, TableError> {
         // Make sure they are setting all attributes
         if self.table.keys().len() - row.len() != 0 {
-            return Err(TableError { source: TableErrorSource::IncorrectRowSize })
+            return Err(TableError {
+                source: TableErrorSource::IncorrectRowSize,
+            });
         }
         // Make sure they are not trying to insert data under non-existant attributes
         for (attribute, _) in &row {
             if !self.table.contains_key(attribute) {
-                return Err(TableError { source: TableErrorSource::AttributeNotFound });
+                return Err(TableError {
+                    source: TableErrorSource::AttributeNotFound,
+                });
             }
         }
 
         // Push each Option<Data> into the column they belong
-        for (attribute, data) in row { 
+        for (attribute, data) in row {
             self.table
                 .entry(attribute)
                 .and_modify(|column| column.push(data));
