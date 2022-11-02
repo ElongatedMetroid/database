@@ -1,14 +1,18 @@
 #![feature(exact_size_is_empty)]
-mod database;
-mod table;
+pub mod cli;
+pub mod database;
+pub mod table;
 
 #[cfg(test)]
 mod tests {
-    use crate::{database::Database, table::Data};
+    use crate::{
+        database::{Database, DatabaseConfig, DatabaseStorageType},
+        table::Data,
+    };
 
     #[test]
     fn bank_managment() {
-        let mut db = Database::new();
+        let mut db = Database::new(DatabaseConfig::new(true, DatabaseStorageType::Memory));
 
         db
             .add_table(/*Mode::Memory, Mode::Storage, Mode::Smart (write all to storage but keep newest data in mem) */ Data::Text(String::from("Users")),

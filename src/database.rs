@@ -1,7 +1,10 @@
 use core::fmt;
 use std::error::Error;
 
-use crate::table::{Data, Table};
+use crate::{
+    cli::DatabaseCommand,
+    table::{Data, Table},
+};
 
 #[derive(Debug)]
 pub struct DatabaseError {
@@ -42,13 +45,43 @@ impl fmt::Display for DatabaseErrorSource {
 impl Error for DatabaseErrorSource {}
 
 pub struct Database {
+    config: DatabaseConfig,
     tables: Vec<Table>,
+}
+
+pub enum DatabaseStorageType {
+    /// The database is completly stored in memory
+    Memory,
+    /// The database is completly stored on disk (to the extent possible)
+    Storage(String),
+    /// The database is both stored on disk and memory
+    MemoryAndStorage(String),
+    /// The database is completly stored on disk, with the most recently/most used items stored
+    /// inside memory
+    Smart(String),
+}
+
+pub struct DatabaseConfig {
+    auto_save: bool,
+    storage_type: DatabaseStorageType,
+}
+
+impl DatabaseConfig {
+    pub fn new(auto_save: bool, storage_type: DatabaseStorageType) -> Self {
+        Self {
+            auto_save,
+            storage_type,
+        }
+    }
 }
 
 impl Database {
     /// Create a new empty database
-    pub fn new() -> Self {
-        Self { tables: Vec::new() }
+    pub fn new(config: DatabaseConfig) -> Self {
+        Self {
+            config,
+            tables: Vec::new(),
+        }
     }
 
     /// Add a new table to the database with the specified attributes.
