@@ -2,12 +2,13 @@
 pub mod cli;
 pub mod database;
 pub mod table;
+pub mod data;
 
 #[cfg(test)]
 mod tests {
     use crate::{
         database::{Database, DatabaseConfig, DatabaseStorageType},
-        table::Data,
+        data::Data,
     };
 
     #[test]

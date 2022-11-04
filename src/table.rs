@@ -1,5 +1,7 @@
 use std::{collections::BTreeMap, error::Error, fmt};
 
+use crate::data::Data;
+
 #[derive(Debug)]
 pub struct TableError {
     source: TableErrorSource,
@@ -45,34 +47,6 @@ pub struct Table {
     pub(crate) name: Data,
     /// HashMap of HashMaps with the key to those hashmaps being the attribute
     table: BTreeMap<Data, Vec<Option<Data>>>,
-}
-
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
-pub enum Data {
-    /// String of characters
-    Text(String),
-    /// Single character
-    Character(char),
-    /// Number without decimal values
-    Integer(i64),
-    /// True or false value
-    Boolean(bool),
-    /// Vector of bytes
-    Blob(Vec<u8>),
-}
-
-impl fmt::Display for Data {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let data = match self {
-            Data::Text(value) => value.clone(),
-            Data::Character(value) => value.to_string(),
-            Data::Integer(value) => value.to_string(),
-            Data::Boolean(value) => value.to_string(),
-            Data::Blob(_) => String::from("-- blob --"),
-        };
-
-        write!(f, "{}", data)
-    }
 }
 
 impl fmt::Display for Table {

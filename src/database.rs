@@ -2,8 +2,8 @@ use core::fmt;
 use std::error::Error;
 
 use crate::{
-    cli::DatabaseCommand,
-    table::{Data, Table},
+    table::Table,
+    data::Data,
 };
 
 #[derive(Debug)]
