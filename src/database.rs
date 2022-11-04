@@ -1,10 +1,7 @@
 use core::fmt;
 use std::error::Error;
 
-use crate::{
-    table::Table,
-    data::Data,
-};
+use crate::{data::Data, table::Table};
 
 #[derive(Debug)]
 pub struct DatabaseError {

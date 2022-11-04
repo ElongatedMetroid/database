@@ -1,14 +1,14 @@
 #![feature(exact_size_is_empty)]
 pub mod cli;
+pub mod data;
 pub mod database;
 pub mod table;
-pub mod data;
 
 #[cfg(test)]
 mod tests {
     use crate::{
-        database::{Database, DatabaseConfig, DatabaseStorageType},
         data::Data,
+        database::{Database, DatabaseConfig, DatabaseStorageType},
     };
 
     #[test]
