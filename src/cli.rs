@@ -1,6 +1,10 @@
-use std::{error::Error, fmt, ops::Residual};
+use std::{error::Error, fmt};
 
-use crate::{database::{Database, DatabaseError}, table::{Data, Table}};
+use crate::{
+    data::Data,
+    database::{Database, DatabaseError},
+    table::Table,
+};
 
 #[derive(Debug)]
 pub struct DatabaseCommandError {
@@ -41,7 +45,7 @@ impl fmt::Display for DatabaseCommandErrorSource {
                     "the provided command is not part of the default commands execute method"
                 ),
                 DatabaseCommandErrorSource::ArgumentNotProvided(arg_name) =>
-                    format!("{} argument not provided", arg_name),
+                    format!("`{}` argument not provided", arg_name),
             }
         )
     }
@@ -49,19 +53,19 @@ impl fmt::Display for DatabaseCommandErrorSource {
 
 impl Error for DatabaseCommandErrorSource {}
 
-pub trait DatabaseCommand: fmt::Debug {
+pub trait DatabaseCommand<T>: fmt::Debug {
     fn arg_parser(&mut self, args: Vec<&str>) -> Result<(), DatabaseCommandError>;
-    fn execute(&mut self, db: &mut Database) -> Result<(), DatabaseError>;
+    fn execute(&mut self, db: &mut Database) -> Result<T, DatabaseError>;
 }
 
 #[derive(Debug)]
 pub struct NewTable {
-    // TODO: MAKE
+    // TODO: MAKE name Data
     name: String,
     attributes: Vec<Data>,
 }
 
-impl DatabaseCommand for NewTable {
+impl<T> DatabaseCommand<&mut Table> for NewTable {
     fn arg_parser(&mut self, args: Vec<&str>) -> Result<(), DatabaseCommandError> {
         // First arg is the name of the table, the rest of the args are attributes
 
@@ -89,34 +93,34 @@ impl DatabaseCommand for NewTable {
         for arg in &args[1..] {
             match arg.parse::<i64>() {
                 Ok(attribute) => {
-                    self.attributes.push(Data::Integer(attribute));
+                    self.attributes.push(Data::from(attribute));
                     continue;
                 }
                 Err(_) => (),
             }
             match arg.parse::<char>() {
                 Ok(attribute) => {
-                    self.attributes.push(Data::Character(attribute));
+                    self.attributes.push(Data::from(attribute));
                     continue;
                 }
                 Err(_) => (),
             }
             match arg.parse::<bool>() {
                 Ok(attribute) => {
-                    self.attributes.push(Data::Boolean(attribute));
+                    self.attributes.push(Data::from(attribute));
                     continue;
                 }
                 Err(_) => (),
             }
 
-            self.attributes.push(Data::Text(arg.to_string()));
+            self.attributes.push(Data::from(*arg));
         }
 
         Ok(())
     }
 
-    fn execute(&mut self, db: &mut Database) -> Result<(), DatabaseError> {
-        db.add_table(Data::Text(self.name.clone()), self.attributes.clone())
+    fn execute(&mut self, db: &mut Database) -> Result<T, DatabaseError> {
+        db.add_table(Data::from(self.name.clone()), self.attributes.clone())
     }
 }
 
@@ -124,7 +128,7 @@ pub trait CommandParser<T> {
     fn keyword_parser(
         &self,
         keyword: &str,
-    ) -> Result<Box<dyn DatabaseCommand>, DatabaseCommandError> {
+    ) -> Result<Box<dyn DatabaseCommand<T>>, DatabaseCommandError> {
         match keyword {
             "NewTable" => Ok(Box::new(NewTable {
                 name: String::new(),
@@ -137,7 +141,7 @@ pub trait CommandParser<T> {
             }
         }
     }
-    fn parse(&self, input: &str) -> Result<Box<dyn DatabaseCommand>, DatabaseCommandError> {
+    fn parse(&self, input: &str) -> Result<Box<dyn DatabaseCommand<T>>, DatabaseCommandError> {
         let mut input_words = input.split_whitespace();
 
         let mut command = match self.keyword_parser(&match input_words.next() {
