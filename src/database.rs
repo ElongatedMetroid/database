@@ -1,7 +1,7 @@
 use core::fmt;
 use std::error::Error;
 
-use crate::{data::Data, table::Table};
+use crate::{cli::DatabaseCommand, data::Data, table::Table};
 
 #[derive(Debug)]
 pub struct DatabaseError {
@@ -114,5 +114,9 @@ impl Database {
         Err(DatabaseError {
             source: DatabaseErrorSource::NameDoesNotExist,
         })
+    }
+
+    pub fn command(&mut self, mut command: Box<dyn DatabaseCommand>) -> Result<(), DatabaseError> {
+        command.execute(self)
     }
 }
