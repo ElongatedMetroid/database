@@ -53,9 +53,9 @@ impl fmt::Display for DatabaseCommandErrorSource {
 
 impl Error for DatabaseCommandErrorSource {}
 
-pub trait DatabaseCommand<T>: fmt::Debug {
+pub trait DatabaseCommand: fmt::Debug {
     fn arg_parser(&mut self, args: Vec<&str>) -> Result<(), DatabaseCommandError>;
-    fn execute(&mut self, db: &mut Database) -> Result<T, DatabaseError>;
+    fn execute(&mut self, db: &mut Database) -> Result<(), DatabaseError>;
 }
 
 #[derive(Debug)]
@@ -65,7 +65,7 @@ pub struct NewTable {
     attributes: Vec<Data>,
 }
 
-impl<T> DatabaseCommand<&mut Table> for NewTable {
+impl DatabaseCommand for NewTable {
     fn arg_parser(&mut self, args: Vec<&str>) -> Result<(), DatabaseCommandError> {
         // First arg is the name of the table, the rest of the args are attributes
 
@@ -119,16 +119,18 @@ impl<T> DatabaseCommand<&mut Table> for NewTable {
         Ok(())
     }
 
-    fn execute(&mut self, db: &mut Database) -> Result<T, DatabaseError> {
-        db.add_table(Data::from(self.name.clone()), self.attributes.clone())
+    fn execute(&mut self, db: &mut Database) -> Result<(), DatabaseError> {
+        db.add_table(Data::from(self.name.clone()), self.attributes.clone());
+
+        Ok(())
     }
 }
 
-pub trait CommandParser<T> {
+pub trait CommandParser {
     fn keyword_parser(
         &self,
         keyword: &str,
-    ) -> Result<Box<dyn DatabaseCommand<T>>, DatabaseCommandError> {
+    ) -> Result<Box<dyn DatabaseCommand>, DatabaseCommandError> {
         match keyword {
             "NewTable" => Ok(Box::new(NewTable {
                 name: String::new(),
@@ -141,7 +143,7 @@ pub trait CommandParser<T> {
             }
         }
     }
-    fn parse(&self, input: &str) -> Result<Box<dyn DatabaseCommand<T>>, DatabaseCommandError> {
+    fn parse(&self, input: &str) -> Result<Box<dyn DatabaseCommand>, DatabaseCommandError> {
         let mut input_words = input.split_whitespace();
 
         let mut command = match self.keyword_parser(&match input_words.next() {
@@ -165,12 +167,6 @@ pub trait CommandParser<T> {
     }
 }
 
-pub struct DefaultCommandParser {}
+pub struct DefaultCommandParser;
 
-impl<T> CommandParser<T> for DefaultCommandParser {}
-
-impl DefaultCommandParser {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
+impl CommandParser for DefaultCommandParser {}
