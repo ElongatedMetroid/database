@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{error::Error, collections::HashMap};
+use std::{collections::HashMap, error::Error};
 
 use crate::{cli::DatabaseCommand, data::Data, table::Table};
 
@@ -35,7 +35,8 @@ impl fmt::Display for DatabaseErrorSource {
             match *self {
                 DatabaseErrorSource::NameAlreadyExists => "a table with that name already exists",
                 DatabaseErrorSource::NameDoesNotExist => "a table with that name does not exist",
-                DatabaseErrorSource::RepeatedAttribute => "cant add the same attribute to the table twice",
+                DatabaseErrorSource::RepeatedAttribute =>
+                    "cant add the same attribute to the table twice",
             }
         )
     }
@@ -131,7 +132,10 @@ impl Database {
         })
     }
 
-    pub fn command<'a, T>(&'a mut self, command: &'a mut Box<dyn DatabaseCommand<T>>) -> Result<&'a mut T, DatabaseError> {
+    pub fn command<'a, T>(
+        &'a mut self,
+        command: &'a mut Box<dyn DatabaseCommand<T>>,
+    ) -> Result<&'a mut T, DatabaseError> {
         command.execute(self)
     }
 }
