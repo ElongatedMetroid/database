@@ -1,9 +1,7 @@
 use std::io;
 
 use database::{
-    cli::{CommandParser, DefaultCommandParser},
-    data::Data,
-    database::{Database, DatabaseConfig, DatabaseStorageType},
+    database::{Database, DatabaseConfig, DatabaseStorageType}, cli::{default::DefaultCommandParser, CommandParser},
 };
 
 fn main() {
@@ -17,15 +15,10 @@ fn main() {
         buf.clear();
         io::stdin().read_line(&mut buf).unwrap();
 
-        let command = DefaultCommandParser.parse(&buf).unwrap();
+        let mut command = DefaultCommandParser.parse(&buf).unwrap();
 
-        println!("{:#?}", command);
+        let result = db.command(&mut command);
 
-        db.command(command);
-
-        println!(
-            "{}",
-            db.get_table(Data::Text(String::from("users"))).unwrap()
-        );
+        println!("{}", result.unwrap());
     }
 }
