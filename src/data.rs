@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Hash)]
 pub enum Data {
     /// String of characters
     Text(String),
