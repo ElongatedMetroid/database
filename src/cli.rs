@@ -118,7 +118,7 @@ impl DatabaseCommand<Table> for NewTable {
     }
 
     fn execute<'a>(&'a mut self, db: &'a mut Database) -> Result<&mut Table, DatabaseError> {
-        db.add_table(Data::from(self.name.clone()), self.attributes.clone())
+        db.add_table(self.name.clone(), self.attributes.clone())
     }
 }
 
