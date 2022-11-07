@@ -1,7 +1,7 @@
 use core::fmt;
 use std::{collections::HashMap, error::Error};
 
-use crate::{cli::DatabaseCommand, data::Data, table::Table};
+use crate::{command::DatabaseCommand, data::Data, table::Table};
 
 #[derive(Debug)]
 pub struct DatabaseError {

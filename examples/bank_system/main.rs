@@ -1,7 +1,7 @@
 use std::io;
 
 use database::{
-    database::{Database, DatabaseConfig, DatabaseStorageType}, cli::{default::DefaultCommandParser, CommandParser},
+    database::{Database, DatabaseConfig, DatabaseStorageType}, command::{default::DefaultCommandParser, CommandParser},
 };
 
 fn main() {
