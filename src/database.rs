@@ -131,9 +131,7 @@ impl Database {
         })
     }
 
-    // pub fn command<T>(&mut self, mut command: Box<dyn DatabaseCommand<T>>) -> Result<&mut T, DatabaseError> {
-    //     let test = command.execute(self);
-
-    //     test
-    // }
+    pub fn command<'a, T>(&'a mut self, command: &'a mut Box<dyn DatabaseCommand<T>>) -> Result<&'a mut T, DatabaseError> {
+        command.execute(self)
+    }
 }
