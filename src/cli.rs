@@ -53,25 +53,24 @@ impl fmt::Display for DatabaseCommandErrorSource {
 
 impl Error for DatabaseCommandErrorSource {}
 
-pub trait DatabaseCommand: fmt::Debug {
+pub trait DatabaseCommand<T>: fmt::Debug {
     fn arg_parser(&mut self, args: Vec<&str>) -> Result<(), DatabaseCommandError>;
-    fn execute(&mut self, db: &mut Database) -> Result<(), DatabaseError>;
+    fn execute<'a>(&'a mut self, db: &'a mut Database) -> Result<&mut T, DatabaseError>;
 }
 
 #[derive(Debug)]
 pub struct NewTable {
-    // TODO: MAKE name Data
-    name: String,
+    name: Data,
     attributes: Vec<Data>,
 }
 
-impl DatabaseCommand for NewTable {
+impl DatabaseCommand<Table> for NewTable {
     fn arg_parser(&mut self, args: Vec<&str>) -> Result<(), DatabaseCommandError> {
         // First arg is the name of the table, the rest of the args are attributes
 
         // Get the name argument into our name field
         self.name = match args.get(0) {
-            Some(name) => name,
+            Some(name) => Data::from(*name),
             None => {
                 return Err(DatabaseCommandError {
                     source: DatabaseCommandErrorSource::ArgumentNotProvided(String::from(
@@ -79,8 +78,7 @@ impl DatabaseCommand for NewTable {
                     )),
                 })
             }
-        }
-        .to_string();
+        };
 
         // Check if attribute field(s) were provided
         if args.get(1).is_none() {
@@ -119,21 +117,19 @@ impl DatabaseCommand for NewTable {
         Ok(())
     }
 
-    fn execute(&mut self, db: &mut Database) -> Result<(), DatabaseError> {
-        db.add_table(Data::from(self.name.clone()), self.attributes.clone());
-
-        Ok(())
+    fn execute<'a>(&'a mut self, db: &'a mut Database) -> Result<&mut Table, DatabaseError> {
+        db.add_table(Data::from(self.name.clone()), self.attributes.clone())
     }
 }
 
-pub trait CommandParser {
+pub trait CommandParser<T> where NewTable: DatabaseCommand<T> {
     fn keyword_parser(
         &self,
         keyword: &str,
-    ) -> Result<Box<dyn DatabaseCommand>, DatabaseCommandError> {
+    ) -> Result<Box<dyn DatabaseCommand<T>>, DatabaseCommandError> {
         match keyword {
             "NewTable" => Ok(Box::new(NewTable {
-                name: String::new(),
+                name: Data::from(String::new()),
                 attributes: Vec::new(),
             })),
             _ => {
@@ -143,7 +139,7 @@ pub trait CommandParser {
             }
         }
     }
-    fn parse(&self, input: &str) -> Result<Box<dyn DatabaseCommand>, DatabaseCommandError> {
+    fn parse(&self, input: &str) -> Result<Box<dyn DatabaseCommand<T>>, DatabaseCommandError> {
         let mut input_words = input.split_whitespace();
 
         let mut command = match self.keyword_parser(&match input_words.next() {
@@ -169,4 +165,4 @@ pub trait CommandParser {
 
 pub struct DefaultCommandParser;
 
-impl CommandParser for DefaultCommandParser {}
+impl<T> CommandParser<T> for DefaultCommandParser where NewTable: DatabaseCommand<T> {}
