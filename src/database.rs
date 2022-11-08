@@ -120,9 +120,9 @@ impl Database {
 
     /// Get a mutable reference to the table with a specified name.
     /// This will fail if a table with the name does not exist.
-    pub fn get_table(&mut self, name: Data) -> Result<&mut Table, DatabaseError> {
+    pub fn get_table(&mut self, name: &Data) -> Result<&mut Table, DatabaseError> {
         for table in &mut self.tables {
-            if table.name == name {
+            if table.name == *name {
                 return Ok(table);
             }
         }
