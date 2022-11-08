@@ -1,11 +1,15 @@
-use crate::{data::Data, table::Table, database::{Database, DatabaseError}};
+use crate::{
+    data::Data,
+    database::{Database, DatabaseError},
+    table::Table,
+};
 
-use super::{DatabaseCommand, DatabaseCommandError, DatabaseCommandErrorSource, CommandParser};
+use super::{CommandParser, DatabaseCommand, DatabaseCommandError, DatabaseCommandErrorSource};
 
-#[derive(Debug)]
 pub struct NewTable {
-    name: Data,
-    attributes: Vec<Data>,
+    /// This field is an Option<Data> so we can move the data instead of cloning it
+    name: Option<Data>,
+    attributes: Option<Vec<Data>>,
 }
 
 impl DatabaseCommand<Table> for NewTable {
@@ -13,8 +17,8 @@ impl DatabaseCommand<Table> for NewTable {
         // First arg is the name of the table, the rest of the args are attributes
 
         // Get the name argument into our name field
-        self.name = match args.get(0) {
-            Some(name) => Data::from(*name),
+        self.name = Some(match args.get(0) {
+            Some(name) => Data::convert_to_correct_data_from_str(*name),
             None => {
                 return Err(DatabaseCommandError {
                     source: DatabaseCommandErrorSource::ArgumentNotProvided(String::from(
@@ -22,7 +26,7 @@ impl DatabaseCommand<Table> for NewTable {
                     )),
                 })
             }
-        };
+        });
 
         // Check if attribute field(s) were provided
         if args.get(1).is_none() {
@@ -31,53 +35,82 @@ impl DatabaseCommand<Table> for NewTable {
             });
         }
 
+        self.attributes = Some(Vec::new());
         // Convert the attribute args into the correct Data enum varients
         for arg in &args[1..] {
-            match arg.parse::<i64>() {
-                Ok(attribute) => {
-                    self.attributes.push(Data::from(attribute));
-                    continue;
-                }
-                Err(_) => (),
-            }
-            match arg.parse::<char>() {
-                Ok(attribute) => {
-                    self.attributes.push(Data::from(attribute));
-                    continue;
-                }
-                Err(_) => (),
-            }
-            match arg.parse::<bool>() {
-                Ok(attribute) => {
-                    self.attributes.push(Data::from(attribute));
-                    continue;
-                }
-                Err(_) => (),
+            if let Some(attributes) = &mut self.attributes {
+                attributes.push(Data::convert_to_correct_data_from_str(*arg));
             }
 
-            self.attributes.push(Data::from(*arg));
+            continue;
         }
 
         Ok(())
     }
 
     fn execute<'a>(&mut self, db: &'a mut Database) -> Result<&'a mut Table, DatabaseError> {
-        db.add_table(self.name.clone(), self.attributes.clone())
+        // Since the name and attributes fields were in an option we can move them instead of cloning
+        db.add_table(self.name.take().unwrap(), self.attributes.take().unwrap())
+    }
+}
+
+impl NewTable {
+    pub fn new() -> Self {
+        Self {
+            name: None,
+            attributes: None,
+        }
+    }
+}
+
+pub struct GetTable {
+    name: Data,
+}
+
+impl DatabaseCommand<Table> for GetTable {
+    fn arg_parser(&mut self, args: Vec<&str>) -> Result<(), DatabaseCommandError> {
+        // The first (and only) argument is the name of the table
+        self.name = match args.get(0) {
+            Some(name) => Data::convert_to_correct_data_from_str(*name),
+            None => {
+                return Err(DatabaseCommandError {
+                    source: DatabaseCommandErrorSource::ArgumentNotProvided(String::from(
+                        "table name",
+                    )),
+                });
+            }
+        };
+
+        Ok(())
+    }
+
+    fn execute<'a>(&'a mut self, db: &'a mut Database) -> Result<&mut Table, DatabaseError> {
+        db.get_table(&self.name)
+    }
+}
+
+impl GetTable {
+    pub fn new() -> Self {
+        Self {
+            name: Data::from(0),
+        }
     }
 }
 
 pub struct DefaultCommandParser;
 
-impl<T> CommandParser<T> for DefaultCommandParser where NewTable: DatabaseCommand<T> {
+impl<T> CommandParser<T> for DefaultCommandParser
+where
+    NewTable: DatabaseCommand<T>,
+    GetTable: DatabaseCommand<T>,
+{
     fn keyword_parser(
         &self,
         keyword: &str,
     ) -> Result<Box<dyn DatabaseCommand<T>>, DatabaseCommandError> {
         match keyword {
-            "NewTable" => Ok(Box::new(NewTable {
-                name: Data::from(String::new()),
-                attributes: Vec::new(),
-            })),
+            "NewTable" => Ok(Box::new(NewTable::new())),
+            "GetTable" => Ok(Box::new(GetTable::new())),
             _ => {
                 return Err(DatabaseCommandError {
                     source: DatabaseCommandErrorSource::KeywordNotFound,

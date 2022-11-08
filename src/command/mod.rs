@@ -51,7 +51,7 @@ impl fmt::Display for DatabaseCommandErrorSource {
 
 impl Error for DatabaseCommandErrorSource {}
 
-pub trait DatabaseCommand<T>: fmt::Debug {
+pub trait DatabaseCommand<T> {
     fn arg_parser(&mut self, args: Vec<&str>) -> Result<(), DatabaseCommandError>;
     fn execute<'a>(&'a mut self, db: &'a mut Database) -> Result<&mut T, DatabaseError>;
 }
