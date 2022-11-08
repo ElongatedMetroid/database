@@ -28,6 +28,29 @@ impl fmt::Display for Data {
     }
 }
 
+impl Data {
+    /// Converts an &str into the correct Data varient. NO this is not for converting a &str to a Data::Text, it is for converting that &str
+    /// to the correct type. For example if that &str is "1" this will return Data::Integer(1), or if the &str is "true" this will return
+    /// Data::Boolean(true). If it cant convert the &str to either a i64, char, or bool it will just return Data::Text(&str). Note, this will
+    /// not handle Data::Blob()
+    pub fn convert_to_correct_data_from_str(s: &str) -> Data {
+        match s.parse::<i64>() {
+            Ok(attribute) => return Data::from(attribute),
+            Err(_) => (),
+        }
+        match s.parse::<char>() {
+            Ok(attribute) => return Data::from(attribute),
+            Err(_) => (),
+        }
+        match s.parse::<bool>() {
+            Ok(attribute) => return Data::from(attribute),
+            Err(_) => (),
+        }
+
+        Data::from(s)
+    }
+}
+
 impl From<&str> for Data {
     fn from(value: &str) -> Self {
         Data::Text(String::from(value))
