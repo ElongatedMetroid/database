@@ -1,7 +1,8 @@
 use std::io;
 
 use database::{
-    database::{Database, DatabaseConfig, DatabaseStorageType}, command::{default::DefaultCommandParser, CommandParser},
+    command::{default::DefaultCommandParser, CommandParser},
+    database::{Database, DatabaseConfig, DatabaseStorageType},
 };
 
 fn main() {
@@ -17,8 +18,10 @@ fn main() {
 
         let mut command = DefaultCommandParser.parse(&buf).unwrap();
 
-        let result = db.command(&mut command);
+        //let result = db.command(&mut command);
 
-        println!("{}", result.unwrap());
+        //println!("{}", result.unwrap());
+        // Idea,
+        // GetTable users;PushRow
     }
 }

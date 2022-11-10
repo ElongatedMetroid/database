@@ -1,6 +1,6 @@
 pub mod default;
 
-use std::{error::Error, fmt};
+use std::{any::Any, error::Error, fmt};
 
 use crate::database::{Database, DatabaseError};
 
@@ -26,6 +26,7 @@ enum DatabaseCommandErrorSource {
     KeywordNotProvided,
     KeywordNotFound,
     CommandIsNotDefault,
+    NoInputProvided,
     ArgumentNotProvided(String),
 }
 
@@ -42,6 +43,8 @@ impl fmt::Display for DatabaseCommandErrorSource {
                 DatabaseCommandErrorSource::CommandIsNotDefault => String::from(
                     "the provided command is not part of the default commands execute method"
                 ),
+                DatabaseCommandErrorSource::NoInputProvided =>
+                    String::from("the input provied was empty"),
                 DatabaseCommandErrorSource::ArgumentNotProvided(arg_name) =>
                     format!("`{}` argument not provided", arg_name),
             }
@@ -52,7 +55,9 @@ impl fmt::Display for DatabaseCommandErrorSource {
 impl Error for DatabaseCommandErrorSource {}
 
 pub trait DatabaseCommand<T> {
-    fn arg_parser(&mut self, args: Vec<&str>) -> Result<(), DatabaseCommandError>;
+    fn arg_parser(&mut self, _args: Vec<&str>) -> Result<(), DatabaseCommandError> {
+        Ok(())
+    }
     fn execute<'a>(&'a mut self, db: &'a mut Database) -> Result<&mut T, DatabaseError>;
 }
 
@@ -61,26 +66,54 @@ pub trait CommandParser<T> {
         &self,
         keyword: &str,
     ) -> Result<Box<dyn DatabaseCommand<T>>, DatabaseCommandError>;
-    fn parse(&self, input: &str) -> Result<Box<dyn DatabaseCommand<T>>, DatabaseCommandError> {
-        let mut input_words = input.split_whitespace();
+    fn parse(
+        &self,
+        input: &str,
+    ) -> Result<
+        (
+            Vec<Box<dyn DatabaseCommand<Box<dyn DatabaseCommand<T>>>>>,
+            Box<dyn DatabaseCommand<T>>,
+        ),
+        DatabaseCommandError,
+    > {
+        let mut commands: Vec<Box<dyn DatabaseCommand<Box<dyn DatabaseCommand<T>>>>> = Vec::new();
+        let mut last_command = None;
+        let mut input_commands = input.split(';').peekable();
 
-        let mut command = match self.keyword_parser(&match input_words.next() {
-            Some(keyword) => keyword,
-            None => {
-                return Err(DatabaseCommandError {
-                    source: DatabaseCommandErrorSource::KeywordNotProvided,
-                })
-            }
-        }) {
-            Ok(command) => command,
-            Err(error) => return Err(error),
-        };
-
-        match command.arg_parser(input_words.collect()) {
-            Ok(_) => (),
-            Err(error) => return Err(error),
+        if input.is_empty() {
+            return Err(DatabaseCommandError {
+                source: DatabaseCommandErrorSource::NoInputProvided,
+            });
         }
 
-        Ok(command)
+        while let Some(input) = input_commands.next() {
+            let mut input_words = input.split_whitespace();
+
+            let mut command = match self.keyword_parser(&match input_words.next() {
+                Some(keyword) => keyword,
+                None => {
+                    return Err(DatabaseCommandError {
+                        source: DatabaseCommandErrorSource::KeywordNotProvided,
+                    })
+                }
+            }) {
+                Ok(command) => command,
+                Err(error) => return Err(error),
+            };
+
+            match command.arg_parser(input_words.collect()) {
+                Ok(_) => (),
+                Err(error) => return Err(error),
+            }
+
+            if input_commands.peek().is_none() {
+                last_command = Some(command);
+            } else {
+                // Convert Box<dyn DatabaseCommand<T>> into Box<dyn DatabaseCommand<Box<dyn DatabaseCommand<T>>>>
+                //commands.push(command);
+            }
+        }
+
+        Ok((commands, last_command.unwrap()))
     }
 }
