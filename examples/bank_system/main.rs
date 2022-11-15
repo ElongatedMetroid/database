@@ -18,10 +18,8 @@ fn main() {
 
         let mut command = DefaultCommandParser.parse(&buf).unwrap();
 
-        //let result = db.command(&mut command);
+        let result = db.command(&mut command);
 
-        //println!("{}", result.unwrap());
-        // Idea,
-        // GetTable users;PushRow
+        println!("{}", result.unwrap());
     }
 }

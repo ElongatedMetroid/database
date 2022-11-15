@@ -1,6 +1,6 @@
 pub mod default;
 
-use std::{any::Any, error::Error, fmt};
+use std::{error::Error, fmt};
 
 use crate::database::{Database, DatabaseError};
 
@@ -66,54 +66,32 @@ pub trait CommandParser<T> {
         &self,
         keyword: &str,
     ) -> Result<Box<dyn DatabaseCommand<T>>, DatabaseCommandError>;
-    fn parse(
-        &self,
-        input: &str,
-    ) -> Result<
-        (
-            Vec<Box<dyn DatabaseCommand<Box<dyn DatabaseCommand<T>>>>>,
-            Box<dyn DatabaseCommand<T>>,
-        ),
-        DatabaseCommandError,
-    > {
-        let mut commands: Vec<Box<dyn DatabaseCommand<Box<dyn DatabaseCommand<T>>>>> = Vec::new();
-        let mut last_command = None;
-        let mut input_commands = input.split(';').peekable();
-
+    fn parse(&self, input: &str) -> Result<Box<dyn DatabaseCommand<T>>, DatabaseCommandError> {
         if input.is_empty() {
             return Err(DatabaseCommandError {
                 source: DatabaseCommandErrorSource::NoInputProvided,
             });
         }
 
-        while let Some(input) = input_commands.next() {
-            let mut input_words = input.split_whitespace();
+        let mut input_words = input.split_whitespace();
 
-            let mut command = match self.keyword_parser(&match input_words.next() {
-                Some(keyword) => keyword,
-                None => {
-                    return Err(DatabaseCommandError {
-                        source: DatabaseCommandErrorSource::KeywordNotProvided,
-                    })
-                }
-            }) {
-                Ok(command) => command,
-                Err(error) => return Err(error),
-            };
-
-            match command.arg_parser(input_words.collect()) {
-                Ok(_) => (),
-                Err(error) => return Err(error),
+        let mut command = match self.keyword_parser(match input_words.next() {
+            Some(keyword) => keyword,
+            None => {
+                return Err(DatabaseCommandError {
+                    source: DatabaseCommandErrorSource::KeywordNotProvided,
+                })
             }
+        }) {
+            Ok(command) => command,
+            Err(error) => return Err(error),
+        };
 
-            if input_commands.peek().is_none() {
-                last_command = Some(command);
-            } else {
-                // Convert Box<dyn DatabaseCommand<T>> into Box<dyn DatabaseCommand<Box<dyn DatabaseCommand<T>>>>
-                //commands.push(command);
-            }
+        match command.arg_parser(input_words.collect()) {
+            Ok(_) => (),
+            Err(error) => return Err(error),
         }
 
-        Ok((commands, last_command.unwrap()))
+        Ok(command)
     }
 }

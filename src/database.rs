@@ -132,7 +132,7 @@ impl Database {
         })
     }
 
-    pub fn command<'a, T>(
+    pub fn command<'a, T: 'static>(
         &'a mut self,
         command: &'a mut Box<dyn DatabaseCommand<T>>,
     ) -> Result<&'a mut T, DatabaseError> {
